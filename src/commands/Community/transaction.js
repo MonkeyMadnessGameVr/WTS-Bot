@@ -46,13 +46,25 @@ export default {
                 await member.roles.remove(role, `${label} ${role.name}`);
             }
 
-            const embed = createEmbed({
-                title: "Transaction Recorded",
-                description: `${user} **${label}** ${role}`,
-                color: role.hexColor || "#99AAB5",
-            });
+                  const channelId = botConfig.league?.transactionChannelId;
+      const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
 
-            await interaction.editReply({ embeds: [embed] });
+      if (!channel || !channel.isTextBased()) {
+        return interaction.editReply({
+          content: "I could not find the transactions channel. Check the channel ID in `bot.js`.",
+        });
+      }
+
+      const messages = {
+        left: `${user} has left ${role}`,
+        joined: `${user} has joined ${role}`,
+        created: `${user} created team ${role}`,
+        disbanded: `${user} disbanded team ${role}`,
+      };
+
+      await channel.send({
+        content: messages[type] ?? `${user} ${label} ${role}`,
+      });
         } catch (error) {
             await handleInteractionError(interaction, error, {
                 commandName: "transaction",
