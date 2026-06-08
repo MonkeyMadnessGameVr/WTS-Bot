@@ -197,6 +197,20 @@ export const botConfig = {
   },
 
   // =========================
+  // GTAG LEAGUE SETTINGS
+  // =========================
+  league: {
+    teamRoleMentionable: true,
+    transactionChannelId: "1508666592425279629",
+    transactionTypes: {
+      left: "Left",
+      joined: "Joined",
+      created: "Created",
+      disbanded: "Disbanded",
+    },
+  },
+  
+  // =========================
   // TICKET SYSTEM
   // =========================
   tickets: {
@@ -441,7 +455,8 @@ export const botConfig = {
     moderation: true,
     logging: true,
     welcome: true,
-
+    league: true,
+    
     // Community engagement systems.
     tickets: true,
     giveaways: true,
