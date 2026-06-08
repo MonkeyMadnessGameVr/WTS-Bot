@@ -16,6 +16,9 @@ export default {
     .addStringOption((option) =>
       option.setName("members").setDescription("Mention players like @user @user").setRequired(true),
     )
+    .addUserOption((option) =>
+      option.setName("captain").setDescription("Team captain").setRequired(true),
+    )    
     .addStringOption((option) =>
       option.setName("color").setDescription("Hex color like #ff0000").setRequired(true),
     ),
@@ -24,6 +27,7 @@ export default {
     try {
       const name = interaction.options.getString("name", true).trim();
       const membersText = interaction.options.getString("members", true);
+      const captain = interaction.options.getUser("captain", true);
       const colorInput = interaction.options.getString("color", true).trim();
       const colorMatch = colorInput.match(/^#?([0-9a-fA-F]{6})$/);
 
@@ -63,16 +67,18 @@ export default {
         added.push(`${member}`);
       }
 
-      const embed = createEmbed({
-        title: "Team Created",
-        description: `Created ${role} and added ${added.length} player(s).`,
-        color,
-      }).addFields({
-        name: "Members",
-        value: added.join(", ") || "None",
-      });
+      const channelId = botConfig.league?.transactionChannelId;
+      const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
 
-      await interaction.editReply({ embeds: [embed] });
+      if (channel && channel.isTextBased()) {
+        await channel.send({
+          content: `${captain} created team ${role}`,
+        });
+      }
+
+      await interaction.editReply({
+        content: `Created ${role} and added ${added.length} player(s).`,
+      });
 
       logger.info("GTAG team created", {
         teamName: name,
