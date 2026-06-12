@@ -1,6 +1,7 @@
-import { Events } from 'discord.js';
-import { logEvent, EVENT_TYPES } from '../services/loggingService.js';
-import { logger } from '../utils/logger.js';
+import { Events } from "discord.js";
+import { logEvent, EVENT_TYPES } from "../services/loggingService.js";
+import { logger } from "../utils/logger.js";
+import { botConfig } from "../config/bot.js";
 
 export default {
   name: Events.GuildMemberUpdate,
@@ -10,27 +11,45 @@ export default {
     try {
       if (!newMember.guild) return;
 
-      const fields = [];
+      const transactionChannelId = botConfig.league?.transactionChannelId;
+      const teamRoleIds = botConfig.league?.teamRoleIds || [];
 
-      
+      const addedTeamRoles = newMember.roles.cache.filter(
+        (role) => !oldMember.roles.cache.has(role.id) && teamRoleIds.includes(role.id),
+      );
+
+      if (addedTeamRoles.size > 0 && transactionChannelId) {
+        const channel = await newMember.client.channels
+          .fetch(transactionChannelId)
+          .catch(() => null);
+
+        if (channel && channel.isTextBased()) {
+          for (const role of addedTeamRoles.values()) {
+            await channel.send({
+              content: `${newMember} Joined ${role}`,
+            });
+          }
+        }
+      }
+
+      const fields = [];
       fields.push({
-        name: '👤 Member',
+        name: "Member",
         value: `${newMember.user.tag} (${newMember.user.id})`,
-        inline: true
+        inline: true,
       });
 
-      
       if (oldMember.nickname !== newMember.nickname) {
         fields.push({
-          name: '🏷️ Old Nickname',
-          value: oldMember.nickname || '*(no nickname)*',
-          inline: true
+          name: "Old Nickname",
+          value: oldMember.nickname || "*(no nickname)*",
+          inline: true,
         });
 
         fields.push({
-          name: '🏷️ New Nickname',
-          value: newMember.nickname || '*(no nickname)*',
-          inline: true
+          name: "New Nickname",
+          value: newMember.nickname || "*(no nickname)*",
+          inline: true,
         });
 
         await logEvent({
@@ -40,15 +59,12 @@ export default {
           data: {
             description: `Member nickname changed: ${newMember.user.tag}`,
             userId: newMember.user.id,
-            fields
-          }
+            fields,
+          },
         });
-
-        return;
       }
-
     } catch (error) {
-      logger.error('Error in guildMemberUpdate event:', error);
+      logger.error("Error in guildMemberUpdate event:", error);
     }
-  }
+  },
 };
