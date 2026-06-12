@@ -199,9 +199,10 @@ export const botConfig = {
   // =========================
   // GTAG LEAGUE SETTINGS
   // =========================
-  league: {
+    league: {
     teamRoleMentionable: true,
     transactionChannelId: "1508666592425279629",
+    teamRoleIds: [],
     transactionTypes: {
       left: "Left",
       joined: "Joined",
