@@ -1,7 +1,7 @@
 import { Events } from "discord.js";
 import { logEvent, EVENT_TYPES } from "../services/loggingService.js";
 import { logger } from "../utils/logger.js";
-import { botConfig } from "../config/bot.js";
+import config from "../config/application.js";
 
 export default {
   name: Events.GuildMemberUpdate,
@@ -11,8 +11,8 @@ export default {
     try {
       if (!newMember.guild) return;
 
-      const transactionChannelId = botConfig.league?.transactionChannelId;
-      const teamRoleIds = botConfig.league?.teamRoleIds || [];
+      const transactionChannelId = config.bot.league?.transactionChannelId;
+      const teamRoleIds = config.bot.league?.teamRoleIds || [];
 
       const addedTeamRoles = newMember.roles.cache.filter(
         (role) => !oldMember.roles.cache.has(role.id) && teamRoleIds.includes(role.id),
