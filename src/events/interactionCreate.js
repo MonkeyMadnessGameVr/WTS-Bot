@@ -223,6 +223,53 @@ export default {
             }
           }
         } else if (interaction.isButton()) {
+          if (interaction.customId.startsWith("league_request_")) {
+  const [action, requesterId, requestedUserId, roleId] = interaction.customId.split(":");
+  const accepted = action === "league_request_accept";
+
+  const requestedMember = await interaction.guild.members
+    .fetch(requestedUserId)
+    .catch(() => null);
+
+  const role = interaction.guild.roles.cache.get(roleId);
+
+  if (!requestedMember || !role) {
+    return interaction.reply({
+      content: "I could not find that user or team role anymore.",
+      ephemeral: true,
+    });
+  }
+
+    const disabledRow = {
+    type: 1,
+    components: interaction.message.components[0].components.map((button) => ({
+      type: 2,
+      custom_id: button.customId ?? button.data?.custom_id,
+      label: button.label ?? button.data?.label,
+      emoji: button.emoji ?? button.data?.emoji,
+      style: button.style ?? button.data?.style,
+      disabled: true,
+    })),
+  };
+
+  if (accepted) {
+    await requestedMember.roles.add(role, `League request accepted by ${interaction.user.tag}`);
+
+    await interaction.update({
+      content: `<@${requesterId}> requested that <@${requestedUserId}> to be on ${role}\n\nAccepted by ${interaction.user}`,
+      components: [disabledRow],
+    });
+
+    return;
+  }
+
+  await interaction.update({
+    content: `<@${requesterId}> requested that <@${requestedUserId}> to be on ${role}\n\nDenied by ${interaction.user}`,
+    components: [disabledRow],
+  });
+
+  return;
+}
           if (interaction.customId.startsWith('shared_todo_')) {
             const parts = interaction.customId.split('_');
             const buttonType = parts.slice(0, 3).join('_');
