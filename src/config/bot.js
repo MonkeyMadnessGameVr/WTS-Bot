@@ -202,6 +202,7 @@ export const botConfig = {
       league: {
     teamRoleMentionable: true,
     transactionChannelId: "1508666592425279629",
+    requestChannelId: "1515186954113646633",
     teamRoleIds: [
       "1515102778454704148",
       "1515103952885256202",
