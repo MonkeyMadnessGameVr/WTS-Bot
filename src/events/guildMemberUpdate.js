@@ -1,5 +1,4 @@
 import { Events } from "discord.js";
-import { logEvent, EVENT_TYPES } from "../services/loggingService.js";
 import { logger } from "../utils/logger.js";
 import config from "../config/application.js";
 
@@ -9,58 +8,45 @@ export default {
 
   async execute(oldMember, newMember) {
     try {
-      if (!newMember.guild) return;
-
       const transactionChannelId = config.bot.league?.transactionChannelId;
       const teamRoleIds = config.bot.league?.teamRoleIds || [];
 
+      if (!transactionChannelId || teamRoleIds.length === 0) return;
+
+      const oldRoleIds = new Set(oldMember.roles.cache.map((role) => role.id));
+      const newRoleIds = new Set(newMember.roles.cache.map((role) => role.id));
+
       const addedTeamRoles = newMember.roles.cache.filter(
-        (role) => !oldMember.roles.cache.has(role.id) && teamRoleIds.includes(role.id),
+        (role) => !oldRoleIds.has(role.id) && teamRoleIds.includes(role.id),
       );
 
-      if (addedTeamRoles.size > 0 && transactionChannelId) {
-        const channel = await newMember.client.channels
-          .fetch(transactionChannelId)
-          .catch(() => null);
+      const removedTeamRoles = oldMember.roles.cache.filter(
+        (role) => !newRoleIds.has(role.id) && teamRoleIds.includes(role.id),
+      );
 
-        if (channel && channel.isTextBased()) {
-          for (const role of addedTeamRoles.values()) {
-            await channel.send({
-              content: `${newMember} Joined ${role}`,
-            });
-          }
-        }
+      if (addedTeamRoles.size === 0 && removedTeamRoles.size === 0) return;
+
+      const channel = await newMember.client.channels
+        .fetch(transactionChannelId)
+        .catch((error) => {
+          logger.error("Could not fetch transaction channel:", error);
+          return null;
+        });
+
+      if (!channel || !channel.isTextBased()) {
+        logger.warn(`Transaction channel not found or not text based: ${transactionChannelId}`);
+        return;
       }
 
-      const fields = [];
-      fields.push({
-        name: "Member",
-        value: `${newMember.user.tag} (${newMember.user.id})`,
-        inline: true,
-      });
-
-      if (oldMember.nickname !== newMember.nickname) {
-        fields.push({
-          name: "Old Nickname",
-          value: oldMember.nickname || "*(no nickname)*",
-          inline: true,
+      for (const role of addedTeamRoles.values()) {
+        await channel.send({
+          content: `${newMember} Joined ${role}`,
         });
+      }
 
-        fields.push({
-          name: "New Nickname",
-          value: newMember.nickname || "*(no nickname)*",
-          inline: true,
-        });
-
-        await logEvent({
-          client: newMember.client,
-          guildId: newMember.guild.id,
-          eventType: EVENT_TYPES.MEMBER_NAME_CHANGE,
-          data: {
-            description: `Member nickname changed: ${newMember.user.tag}`,
-            userId: newMember.user.id,
-            fields,
-          },
+      for (const role of removedTeamRoles.values()) {
+        await channel.send({
+          content: `${newMember} has left ${role}`,
         });
       }
     } catch (error) {
